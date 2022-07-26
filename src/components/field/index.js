@@ -1,15 +1,23 @@
 import PropTypes from 'prop-types'
 import React, { PureComponent } from 'react'
-import { View, Text, TextInput, Animated, StyleSheet, Platform } from 'react-native'
-import { ViewPropTypes } from 'deprecated-react-native-prop-types'
+import {
+  View,
+  Text,
+  TextInput,
+  Animated,
+  StyleSheet,
+  Platform,
+} from 'react-native'
 
 import Line from '../line'
 import Label from '../label'
 import Affix from '../affix'
 import Helper from '../helper'
 import Counter from '../counter'
+import {TextInputPropTypes} from 'deprecated-react-native-prop-types';
 
 import styles from './styles'
+import { TextPropTypes,ViewPropTypes } from 'deprecated-react-native-prop-types'
 
 function startAnimation(animation, options, callback) {
   Animated.timing(animation, options).start(callback)
@@ -17,9 +25,9 @@ function startAnimation(animation, options, callback) {
 
 function labelStateFromProps(props, state) {
   let { placeholder, defaultValue } = props
-  let { value, receivedFocus } = state
+  let { text, receivedFocus } = state
 
-  return !!(placeholder || value || (!receivedFocus && defaultValue))
+  return !!(placeholder || text || (!receivedFocus && defaultValue))
 }
 
 function errorStateFromProps(props, state) {
@@ -57,7 +65,7 @@ export default class TextField extends PureComponent {
   }
 
   static propTypes = {
-    ...TextInput.propTypes,
+    ...TextInputPropTypes,
 
     animationDuration: PropTypes.number,
 
@@ -75,9 +83,9 @@ export default class TextField extends PureComponent {
 
     labelOffset: Label.propTypes.offset,
 
-    // labelTextStyle: Text.propTypes.style,
-    // titleTextStyle: Text.propTypes.style,
-    // affixTextStyle: Text.propTypes.style,
+    labelTextStyle: TextPropTypes.style,
+    titleTextStyle: TextPropTypes.style,
+    affixTextStyle: TextPropTypes.style,
 
     tintColor: PropTypes.string,
     textColor: PropTypes.string,
@@ -130,18 +138,13 @@ export default class TextField extends PureComponent {
     y1: 0,
   }
 
-  static getDerivedStateFromProps({ error, value }, state) {
-    let newState = {}
+  static getDerivedStateFromProps({ error }, state) {
     /* Keep last received error in state */
     if (error && error !== state.error) {
-      newState.error = error
+      return { error }
     }
 
-    if (value !== undefined && value !== state.value) {
-      newState.value = value
-    }
-
-    return newState
+    return null
   }
 
   constructor(props) {
@@ -158,17 +161,17 @@ export default class TextField extends PureComponent {
     this.createGetter('contentInset')
     this.createGetter('labelOffset')
 
-    this.inputRef = this.props.inputRef ?? React.createRef()
+    this.inputRef = React.createRef()
     this.mounted = false
     this.focused = false
 
-    let { value, error, fontSize } = this.props
+    let { value: text, error, fontSize } = this.props
 
-    let labelState = labelStateFromProps(this.props, { value }) ? 1 : 0
+    let labelState = labelStateFromProps(this.props, { text }) ? 1 : 0
     let focusState = errorStateFromProps(this.props) ? -1 : 0
 
     this.state = {
-      value,
+      text,
       error,
 
       focusAnimation: new Animated.Value(focusState),
@@ -219,8 +222,8 @@ export default class TextField extends PureComponent {
 
     let options = {
       toValue: this.focusState(),
-      duration,
       useNativeDriver: false,
+      duration,
     }
 
     startAnimation(focusAnimation, options, this.onFocusAnimationEnd)
@@ -232,7 +235,7 @@ export default class TextField extends PureComponent {
 
     let options = {
       toValue: this.labelState(),
-      useNativeDriver: true,
+      useNativeDriver: false,
       duration,
     }
 
@@ -286,19 +289,20 @@ export default class TextField extends PureComponent {
   }
 
   value() {
-    const { defaultValue } = this.props
+    let { text } = this.state
+    let { defaultValue } = this.props
 
-    const value = this.isDefaultVisible() ? defaultValue : this.state.value
+    let value = this.isDefaultVisible() ? defaultValue : text
 
-    if (value == null) {
+    if (null == value) {
       return ''
     }
 
-    return typeof value === 'string' ? value : String(value)
+    return 'string' === typeof value ? value : String(value)
   }
 
-  setValue(value) {
-    this.setState({ value })
+  setValue(text) {
+    this.setState({ text })
   }
 
   isFocused() {
@@ -319,10 +323,10 @@ export default class TextField extends PureComponent {
   }
 
   isDefaultVisible() {
-    let { value, receivedFocus } = this.state
+    let { text, receivedFocus } = this.state
     let { defaultValue } = this.props
 
-    return !receivedFocus && value == null && defaultValue != null
+    return !receivedFocus && null == text && null != defaultValue
   }
 
   isPlaceholderVisible() {
@@ -332,14 +336,14 @@ export default class TextField extends PureComponent {
   }
 
   isLabelActive() {
-    return this.labelState() === 1
+    return 1 === this.labelState()
   }
 
   onFocus(event) {
     let { onFocus, clearTextOnFocus } = this.props
     let { receivedFocus } = this.state
 
-    if (typeof onFocus === 'function') {
+    if ('function' === typeof onFocus) {
       onFocus(event)
     }
 
@@ -353,14 +357,14 @@ export default class TextField extends PureComponent {
     this.startLabelAnimation()
 
     if (!receivedFocus) {
-      this.setState({ receivedFocus: true, value: this.value() })
+      this.setState({ receivedFocus: true, text: this.value() })
     }
   }
 
   onBlur(event) {
     let { onBlur } = this.props
 
-    if (typeof onBlur === 'function') {
+    if ('function' === typeof onBlur) {
       onBlur(event)
     }
 
@@ -373,7 +377,7 @@ export default class TextField extends PureComponent {
   onChange(event) {
     let { onChange } = this.props
 
-    if (typeof onChange === 'function') {
+    if ('function' === typeof onChange) {
       onChange(event)
     }
   }
@@ -381,13 +385,13 @@ export default class TextField extends PureComponent {
   onChangeText(text) {
     let { onChangeText, formatText } = this.props
 
-    if (typeof formatText === 'function') {
+    if ('function' === typeof formatText) {
       text = formatText(text)
     }
 
-    this.setState({ value: text })
+    this.setState({ text })
 
-    if (typeof onChangeText === 'function') {
+    if ('function' === typeof onChangeText) {
       onChangeText(text)
     }
   }
@@ -396,12 +400,15 @@ export default class TextField extends PureComponent {
     let { onContentSizeChange, fontSize } = this.props
     let { height } = event.nativeEvent.contentSize
 
-    if (typeof onContentSizeChange === 'function') {
+    if ('function' === typeof onContentSizeChange) {
       onContentSizeChange(event)
     }
 
     this.setState({
-      height: Math.max(fontSize * 1.5, Math.ceil(height) + Platform.select({ ios: 4, android: 1 })),
+      height: Math.max(
+        fontSize * 1.5,
+        Math.ceil(height) + Platform.select({ ios: 4, android: 1 })
+      ),
     })
   }
 
@@ -425,7 +432,7 @@ export default class TextField extends PureComponent {
     let { labelFontSize, multiline } = this.props
     let contentInset = this.contentInset()
 
-    if (Platform.OS === 'web' && multiline) {
+    if ('web' === Platform.OS && multiline) {
       return 'auto'
     }
 
@@ -441,8 +448,8 @@ export default class TextField extends PureComponent {
   inputProps() {
     let store = {}
 
-    for (let key in TextInput.propTypes) {
-      if (key === 'defaultValue') {
+    for (let key in TextInputPropTypes) {
+      if ('defaultValue' === key) {
         continue
       }
 
@@ -468,7 +475,7 @@ export default class TextField extends PureComponent {
 
     if (multiline) {
       let lineHeight = fontSize * 1.5
-      let offset = Platform.OS === 'ios' ? 2 : 0
+      let offset = 'ios' === Platform.OS ? 2 : 0
 
       style.height += lineHeight
       style.transform = [
@@ -505,14 +512,19 @@ export default class TextField extends PureComponent {
   renderAccessory(prop) {
     let { [prop]: renderAccessory } = this.props
 
-    return typeof renderAccessory === 'function' ? renderAccessory() : null
+    return 'function' === typeof renderAccessory ? renderAccessory() : null
   }
 
   renderAffix(type) {
     let { labelAnimation } = this.state
-    let { [type]: affix, fontSize, baseColor: color, affixTextStyle: style } = this.props
+    let {
+      [type]: affix,
+      fontSize,
+      baseColor: color,
+      affixTextStyle: style,
+    } = this.props
 
-    if (affix == null) {
+    if (null == affix) {
       return null
     }
 
@@ -577,7 +589,12 @@ export default class TextField extends PureComponent {
   }
 
   renderInput() {
-    let { disabled, editable, tintColor, style: inputStyleOverrides } = this.props
+    let {
+      disabled,
+      editable,
+      tintColor,
+      style: inputStyleOverrides,
+    } = this.props
 
     let props = this.inputProps()
     let inputStyle = this.inputStyle()
@@ -631,7 +648,7 @@ export default class TextField extends PureComponent {
       style: containerStyle,
       onStartShouldSetResponder: () => true,
       onResponderRelease: this.onPress,
-      pointerEvents: !disabled ? 'auto' : 'none',
+      pointerEvents: !disabled && editable ? 'auto' : 'none',
     }
 
     let inputContainerProps = {
@@ -671,16 +688,20 @@ export default class TextField extends PureComponent {
         <Animated.View {...inputContainerProps}>
           {this.renderLine(lineProps)}
           {this.renderAccessory('renderLeftAccessory')}
-          <View style={styles.stack} pointerEvents={editable ? 'auto' : 'none'}>
+
+          <View style={styles.stack}>
             {this.renderLabel(styleProps)}
+
             <View style={styles.row}>
               {this.renderAffix('prefix')}
               {this.renderInput()}
               {this.renderAffix('suffix')}
             </View>
           </View>
+
           {this.renderAccessory('renderRightAccessory')}
         </Animated.View>
+
         {this.renderHelper()}
       </View>
     )

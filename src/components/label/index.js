@@ -1,7 +1,7 @@
 import PropTypes from 'prop-types'
 import React, { PureComponent } from 'react'
 import { Animated, Text } from 'react-native'
-
+import {TextPropTypes} from 'deprecated-react-native-prop-types';
 import styles from './styles'
 
 export default class Label extends PureComponent {
@@ -39,7 +39,7 @@ export default class Label extends PureComponent {
       y1: PropTypes.number,
     }),
 
-    // style: Text.propTypes.style,
+    style: TextPropTypes.style,
     label: PropTypes.string,
   }
 
@@ -61,21 +61,21 @@ export default class Label extends PureComponent {
       ...props
     } = this.props
 
-    if (label == null) {
+    if (null == label) {
       return null
     }
 
     let color = disabled
       ? baseColor
       : restricted
-      ? errorColor
-      : focusAnimation.interpolate({
+        ? errorColor
+        : focusAnimation.interpolate({
           inputRange: [-1, 0, 1],
           outputRange: [errorColor, baseColor, tintColor],
         })
 
     let textStyle = {
-      lineHeight: (style && style.lineHeight) || fontSize,
+      lineHeight: fontSize,
       fontSize,
       color,
     }
